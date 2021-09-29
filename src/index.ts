@@ -4,14 +4,7 @@ const app = express();
 const port = 3000;
 
 import { extract, filterArray } from "./crawl";
-
-// some example filters, can be added and removed via interface + API call
-const filters = {
-  spaces: (e: any) => e !== "",
-  hash: (e: any) => !e?.includes("#"),
-  https: (e: any) => e.includes("https" || "www"),
-  // validTLD: (e: any) => e.includes(".com" || ".dev"),
-};
+import commander from "./batch";
 
 app.use(express.json());
 
@@ -21,10 +14,13 @@ app.get("/", (req, res) => {
 
 app.post("/build-list", async (req, res) => {
   const site = req.body.site;
+  const subsite = site.split("https://")[1];
+  const outputPath = `./report/${subsite}`;
   // build out list by crawling site
-  let list: string[] = await extract(site, "a");
-  list = filterArray(list, filters);
-  res.json(list);
+  const list: string[] = await extract(site, "a");
+  await commander().buildCommandList(list, outputPath);
+  const result = require(`../report/${subsite}/summary.json`);
+  res.json(result);
 });
 
 app.listen(port, () => {

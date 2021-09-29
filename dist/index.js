@@ -16,23 +16,20 @@ const express_1 = __importDefault(require("express"));
 const app = (0, express_1.default)();
 const port = 3000;
 const crawl_1 = require("./crawl");
-// some example filters, can be added and removed via interface + API call
-const filters = {
-    spaces: (e) => e !== "",
-    hash: (e) => !(e === null || e === void 0 ? void 0 : e.includes("#")),
-    https: (e) => e.includes("https" || "www"),
-    // validTLD: (e: any) => e.includes(".com" || ".dev"),
-};
+const batch_1 = __importDefault(require("./batch"));
 app.use(express_1.default.json());
 app.get("/", (req, res) => {
     res.send("hellow world");
 });
 app.post("/build-list", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const site = req.body.site;
+    const subsite = site.split("https://")[1];
+    const outputPath = `./report/${subsite}`;
     // build out list by crawling site
-    let list = yield (0, crawl_1.extract)(site, "a");
-    list = (0, crawl_1.filterArray)(list, filters);
-    res.json(list);
+    const list = yield (0, crawl_1.extract)(site, "a");
+    yield (0, batch_1.default)().buildCommandList(list, outputPath);
+    const result = require(`../report/${subsite}/summary.json`);
+    res.json(result);
 }));
 app.listen(port, () => {
     // tslint:disable-next-line:no-console
