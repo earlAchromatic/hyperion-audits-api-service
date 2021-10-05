@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=14.18.0"
+  },
   "scripts": {
     "lint": "tslint -c tslint.json -p tsconfig.json --fix",
     "build": "npm-run-all clean lint tsc",

@@ -5,6 +5,15 @@ const port = 3000;
 
 import { extract, filterArray } from "./crawl";
 import commander from "./batch";
+import { ChildProcess, fork } from "child_process";
+
+const globalProcessArray: Process[] = [];
+interface Process {
+  cpID: number;
+  status: string;
+  process: ChildProcess;
+  result?: string[];
+}
 
 app.use(express.json());
 
@@ -16,14 +25,53 @@ app.post("/build-list", async (req, res) => {
   const site = req.body.site;
   const subsite = site.split("https://")[1];
   const outputPath = `./report/${subsite}`;
+  const processID = Math.round(Math.random() * 1000);
+  res.set("Location", `/batch/${processID}`);
+  res.status(202).send(subsite);
   // build out list by crawling site
-  const list: string[] = await extract(site, "a");
-  await commander().buildCommandList(list, outputPath);
-  const result = require(`../report/${subsite}/summary.json`);
-  res.json(result);
+
+  const child = fork(__dirname + "/runCrawl", [site, "a"]);
+  const process: Process = {
+    cpID: processID,
+    process: child,
+    status: "Running",
+  };
+
+  globalProcessArray.push(process);
+  console.log(process);
+
+  // const list: string[] = await extract(site, "a");
+  // await commander(processID).buildCommandList(list, outputPath);
+  // const result = require(`../report/${subsite}/summary.json`);
+  // console.log(result);
+  // res.json(result);
+  child.on("message", (data: string[]) => {
+    process.result = data;
+    console.log("data event: " + process.result);
+  });
 });
 
-app.listen(port, () => {
+app.get("/batch/:id", (req, res) => {
+  const id = req.params.id;
+  globalProcessArray.forEach((p) => {
+    if (id === p.cpID.toString()) {
+      if (p.process.exitCode === null) {
+        p.status = "Running";
+        res.send(p);
+      } else {
+        p.status = "Succeeded";
+        res.set("Location", `/batch/${id}/result`);
+        res.send(p);
+      }
+    }
+  });
+});
+
+app.get("/batch/:id/result", (req, res) => {
+  const id = req.params.id;
+});
+
+const server = app.listen(port, () => {
   // tslint:disable-next-line:no-console
   console.log(`listing on port ${port}`);
 });

@@ -22,7 +22,6 @@ function commander() {
         });
         command = command + " -o " + outFolderPath;
         console.log(command);
-        // exec(command);
         try {
             yield execPromise(command);
         }
