@@ -16,7 +16,6 @@ export default function commander(): Command {
     });
     command = command + " -o " + outFolderPath;
     console.log(command);
-    // exec(command);
     try {
       await execPromise(command);
     } catch (err) {
