@@ -100,7 +100,7 @@ app.get("/batch/:id/result", (req, res) => {
     const result = require(`../batch/${id}/result/summary.json`);
     res.send(result);
 });
-const server = app.listen(port, () => {
+app.listen(port, () => {
     // tslint:disable-next-line:no-console
     console.log(`listing on port ${port}`);
 });

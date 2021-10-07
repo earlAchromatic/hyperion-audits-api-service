@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "tslint -c tslint.json -p tsconfig.json --fix",
     "build": "npm-run-all clean lint tsc",
-    "clean": "rimraf dist/*",
+    "clean": "rimraf dist/* && rimraf report/* && rimraf batch/*",
     "tsc": "tsc",
     "dev:start": "npm-run-all build start",
     "dev": "nodemon --watch src -e ts,ejs --exec npm run dev:start",
