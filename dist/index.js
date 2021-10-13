@@ -13,19 +13,59 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const uuid_1 = require("uuid");
 const app = (0, express_1.default)();
 const port = 3000;
 const child_process_1 = require("child_process");
-const globalProcessArray = [];
+const Users = [];
+app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json());
 app.get("/", (req, res) => {
     res.send("hellow world");
 });
+app.get("/init", (req, res) => {
+    var _a;
+    if (!req.cookies.userId) {
+        const newUserId = (0, uuid_1.v4)();
+        res.cookie("userId", newUserId);
+        res.send("cookie should be set now");
+        Users.push({ userId: newUserId, jobs: [] });
+    }
+    else {
+        const UI = req.cookies.userId;
+        const jobArray = (_a = Users.find((f) => {
+            if (f.userId) {
+                return f.userId === UI;
+            }
+        })) === null || _a === void 0 ? void 0 : _a.jobs;
+        res.send(jobArray);
+    }
+});
+function init(req, res) {
+    if (!req.cookies.userId) {
+        const newUserId = (0, uuid_1.v4)();
+        res.cookie("userId", newUserId);
+        Users.push({ userId: newUserId, jobs: [] });
+        console.log("had to quick set a new cookie because there wasnt one");
+        return newUserId;
+    }
+    else
+        return req.cookies.userId;
+}
+function searchUsers(userId, job) {
+    Users.forEach((u) => {
+        if (u.userId === userId) {
+            console.log("adding job " + job + "to " + u.userId);
+            u.jobs.push(job);
+        }
+    });
+}
 app.post("/crawl", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const site = req.body.site;
     const subsite = site.split("https://")[1];
-    const outputPath = `./report/${subsite}`;
-    const processID = Math.round(Math.random() * 1000);
+    const UI = init(req, res);
+    const processID = (0, uuid_1.v4)();
     res.set("Location", `/crawl/${processID}`);
     res.status(202).send(subsite);
     // build out list by crawling site
@@ -36,20 +76,23 @@ app.post("/crawl", (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         process: child,
         status: "Running",
     };
-    globalProcessArray.push(process);
-    console.log(globalProcessArray);
-    // const list: string[] = await extract(site, "a");
-    // await commander(processID).buildCommandList(list, outputPath);
-    // const result = require(`../report/${subsite}/summary.json`);
-    // console.log(result);
-    // res.json(result);
+    searchUsers(UI, process);
+    console.log(Users);
     child.on("message", (data) => {
         process.result = data;
     });
 }));
 app.get("/crawl/:id", (req, res) => {
+    var _a;
     const id = req.params.id;
-    globalProcessArray.forEach((p) => {
+    const UI = init(req, res);
+    console.log(Users);
+    (_a = Users.find((f) => {
+        if (f.userId) {
+            return f.userId === UI;
+        }
+    })) === null || _a === void 0 ? void 0 : _a.jobs.forEach((p) => {
+        console.log("jobs is: " + p);
         if (id === p.cpID.toString()) {
             if (p.process.exitCode === null) {
                 p.status = "Running";
@@ -64,7 +107,8 @@ app.get("/crawl/:id", (req, res) => {
     });
 });
 app.post("/batch/", (req, res) => {
-    const processID = Math.round(Math.random() * 1000);
+    const processID = (0, uuid_1.v4)();
+    const UI = init(req, res);
     const crawlList = JSON.stringify(req.body.batchInput);
     console.log(crawlList);
     const resultLocation = `./batch/${processID}/result`;
@@ -77,11 +121,17 @@ app.post("/batch/", (req, res) => {
         process: child,
         status: "Running",
     };
-    globalProcessArray.push(process);
+    searchUsers(UI, process);
 });
 app.get("/batch/:id/", (req, res) => {
+    var _a;
     const id = req.params.id;
-    globalProcessArray.forEach((p) => {
+    const UI = init(req, res);
+    (_a = Users.find((f) => {
+        if (f.userId) {
+            return f.userId === UI;
+        }
+    })) === null || _a === void 0 ? void 0 : _a.jobs.forEach((p) => {
         if (id === p.cpID.toString()) {
             if (p.process.exitCode === null) {
                 p.status = "Running";

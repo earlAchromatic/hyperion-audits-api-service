@@ -33,8 +33,8 @@ async function cyclePages(
     } else {
       if (!a.includes(site)) {
         // Needs to have www. or no www. or flags internal as ext.
-        //bug where url is for example facebook.com/.../site/... and is therefor included
-        //change to regex
+        // bug where url is for example facebook.com/.../site/... and is therefor included
+        // change to regex
         continue;
       } else {
         outputArray.push(a);
